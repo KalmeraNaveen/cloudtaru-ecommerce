@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block styles %}
+<style>
+    .card {
+        margin: 20px;
+        height: auto; /* Adjust to fit content */
+        width: 350px;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        overflow: hidden; /* Ensure no overflow */
+    }
+    .card-img-top {
+        height: 300px;
+        width: 100%; /* Ensure image covers full width */
+        object-fit: cover;
+    }
+    .card-body {
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+    }
+    .card-title {
+        font-size: 1.25rem; /* Larger title text */
+        margin-bottom: 10px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .card-text {
+        flex-grow: 1;
+        margin-bottom: 10px; /* Space between text elements */
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .card-text.price {
+        font-weight: bold; /* Emphasize price text */
+        font-size: 1.1rem;
+    }
+    .btn-buy {
+        margin-top: auto;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="container mt-5">
+    <div class="row">
+        <!-- Product details card -->
+        <div class="col-md-12 d-flex justify-content-center">
+            <div class="card">
+                <img src="{{ product.image }}" class="card-img-top" alt="{{ product.title }}">
+                <div class="card-body">
+                    <h5 class="card-title">{{ product.title }}</h5>
+                    <p class="card-text">{{ product.description }}</p>
+                    <p class="card-text price">₹{{ product.price }}</p>
+                    <p class="card-text price">GST (5%): ₹{{ gst_amount }}</p>
+                    <p class="card-text price">Total: ₹{{ total_amount }}</p>
+                    <button id="buy-button" class="btn btn-success btn-buy">Buy Now</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include Stripe.js -->
+<script src="https://js.stripe.com/v3/"></script>
+
+<!-- JavaScript for handling the payment -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const buyButton = document.getElementById('buy-button');
+        const productId = "{{ product.id }}";
+        const totalAmount = {{ total_amount|floatformat:"2"|safe }};
+        const stripePublicKey = 'pk_test_4eC39HqLyjWDarjtT1zdp7dc'; // Use your actual public key
+        
+        // Create an instance of Stripe with your public key
+        const stripe = Stripe(stripePublicKey);
+
+        // Set up the checkout process when the button is clicked
+        buyButton.addEventListener('click', function() {
+            fetch('/create-checkout-session/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    amount: Math.round(totalAmount * 100), // Amount in cents
+                    productId: productId,
+                    currency: 'inr'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.url) {
+                    // Redirect to the Stripe Checkout page
+                    window.location.href = data.url;
+                } else {
+                    throw new Error('Failed to create checkout session');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Payment failed. Please try again.');
+            });
+        });
+    });
+</script>
+{% endblock %}

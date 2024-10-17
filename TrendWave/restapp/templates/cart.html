@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% block styles %}
+<style>
+        .carousel-item img {
+            max-height: 200px; /* Adjust as needed */
+            object-fit: cover;
+        }
+        .short-description {
+            display: -webkit-box;
+            -webkit-line-clamp: 2; /* Number of lines to show */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .action-buttons button,
+        .action-buttons a {
+            margin-right: 5px;
+        }
+    </style>
+{% endblock %}
+{% block body %}
+<div class="container mt-5">
+    <h1>Your Cart</h1>
+    
+    <div id="cart-container" class="table-responsive">
+        <!-- Cart items will be dynamically inserted here -->
+    </div>
+
+    <div id="empty-cart" class="jumbotron" style="display: none;">
+        <h1 class="display-4">Your Cart is Empty</h1>
+        <p class="lead">It looks like you haven't added any products to your cart yet. Explore our products and add them to your cart.</p>
+        <hr class="my-4">
+        <p>Start shopping now!</p>
+        <a class="btn btn-primary btn-lg" href="{% url 'products' %}" role="button">Go to Homepage</a>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        fetch('/cart/')
+            .then(response => response.json())
+            .then(data => {
+                const cartContainer = document.getElementById('cart-container');
+                const emptyCart = document.getElementById('empty-cart');
+
+                if (data.length === 0) {
+                    // Show the empty cart message
+                    emptyCart.style.display = 'block';
+                    cartContainer.style.display = 'none';
+                } else {
+                    // Populate the cart with data
+                    emptyCart.style.display = 'none';
+
+                    let tableHtml = `
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Image</th>
+                                    <th>Title</th>
+                                    <th>Description</th>
+                                    <th>Price</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+
+                    data.forEach(product => {
+                        let shortDescription = product.description.length > 100 ? product.description.substring(0, 100) + '...' : product.description;
+                        tableHtml += `
+                            <tr>
+                                <td><img src="${product.image}" alt="${product.title}" class="img-thumbnail" style="max-height: 100px;"></td>
+                                <td><a href="/product/${product.id}/">${product.title}</a></td>
+                                <td class="short-description">${shortDescription}</td>
+                                <td>₹${product.price}</td>
+                                <td class="action-buttons">
+                                    <button class="btn btn-danger btn-sm remove-btn" data-product-id="${product.id}" data-product-title="${product.title}">Remove</button>
+                                    <a href="/buy/${product.id}/" class="btn btn-primary btn-sm">Buy</a>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    tableHtml += `
+                            </tbody>
+                        </table>
+                    `;
+
+                    cartContainer.innerHTML = tableHtml;
+
+                    // Add event listener for remove buttons
+                    document.querySelectorAll('.remove-btn').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const productId = this.getAttribute('data-product-id');
+                            const productTitle = this.getAttribute('data-product-title');
+                            const email = localStorage.getItem('email'); // Retrieve email from local storage
+
+                            fetch('/usersapi/', {
+                                method: 'PATCH',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    cart: productTitle,
+                                    email: email,
+                                }),
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                alert(data.msg || 'An error occurred');
+                                // Optionally, reload the cart or update the UI
+                                location.reload(); // Reload the page to reflect changes
+                            })
+                            .catch(error => {
+                                console.error('Error removing product:', error);
+                                alert('An error occurred while removing the product.');
+                            });
+                        });
+                    });
+                }
+            })
+            .catch(error => console.error('Error fetching cart data:', error));
+    });
+</script>
+
+{% endblock %}

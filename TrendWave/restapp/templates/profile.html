@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% block styles %}
+    <style>
+        .container-c {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+        .jumbotron {
+            background-color: #f8f9fa;
+            padding: 2rem;
+            border-radius: .3rem;
+            flex: 1 1 30%;
+        }
+        .form-container {
+            flex: 1 1 70%;
+        }
+        .alert {
+            display: none;
+        }
+    </style>
+{% endblock %}
+{% block body %}
+    <div class="container-c">
+        <div class="jumbotron">
+            <h4>Welcome!</h4>
+            <p>This is your profile area. You can update your address here.</p>
+        </div>
+        <div class="form-container">
+            <h2>User Profile</h2>
+            <div id="alert" class="alert alert-success" role="alert"></div>
+            <form id="userForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" class="form-control" id="username" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" class="form-control" id="email" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="address">Address</label>
+                    <textarea class="form-control" id="address" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Update Address</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- jQuery and Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <!-- Custom JS -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const email = localStorage.getItem('email');
+            if (!email) {
+                alert('Email is not found in localStorage.');
+                return;
+            }
+
+            // Fetch user data
+            fetch(`http://127.0.0.1:8000/usersapi/?email=${email}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('username').value = data.username;
+                    document.getElementById('email').value = data.email;
+                    document.getElementById('address').value = data.address;
+                })
+                .catch(error => console.error('Error fetching user data:', error));
+
+            // Handle form submission
+            document.getElementById('userForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                const updatedAddress = document.getElementById('address').value;
+
+                fetch('http://127.0.0.1:8000/usersapi/', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        address: updatedAddress
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.msg) {
+                        // Delay showing the alert message by 3 seconds
+                        setTimeout(function() {
+                            document.getElementById('alert').textContent = data.msg;
+                            document.getElementById('alert').style.display = 'block';
+                        }, 3000); // 3000 milliseconds = 3 seconds
+                    }
+                    // Update the address field to reflect changes
+                    document.getElementById('address').value = updatedAddress;
+                })
+                .catch(error => {
+                    console.error('Error updating address:', error);
+                    alert('An error occurred while updating the address.');
+                });
+            });
+        });
+    </script>
+{% endblock %}

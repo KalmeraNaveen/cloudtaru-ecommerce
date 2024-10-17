@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrendWave - Register</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f4f6f9;
+        }
+        .jumbotron {
+            background-color: #007bff;
+            color: white;
+            padding: 50px 25px;
+            text-align: center;
+            height: 100%;
+            border-radius: 10px;
+        }
+        .registration-form {
+            background-color: white;
+            padding: 30px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            transition: transform 0.3s ease-in-out;
+        }
+        .registration-form:hover {
+            transform: translateY(-10px);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .alert {
+            display: none;
+            position: absolute;
+            top: -50px;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .show-alert {
+            display: block !important;
+            opacity: 1 !important;
+        }
+        .close-alert {
+            cursor: pointer;
+        }
+        .btn-group-custom {
+            display: flex;
+            justify-content: space-between;
+        }
+        .error-message {
+            color: #dc3545;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Main container for layout -->
+    <div class="container mt-5">
+        <div class="row">
+            <!-- Jumbotron Section (Left Side) -->
+            <div class="col-md-6">
+                <div class="jumbotron">
+                    <h1 class="display-4">Welcome to TrendWave</h1>
+                    <p class="lead">The best place to shop for all your needs.</p>
+                </div>
+            </div>
+
+            <!-- Registration Form Section (Right Side) -->
+            <div class="col-md-6">
+                <div class="registration-form">
+                    <h2 class="text-center mb-4">Register</h2>
+                    <div id="alertPlaceholder" class="alert alert-danger" role="alert">
+                        <span id="alertMessage"></span>
+                        <span class="close-alert float-end" onclick="closeAlert()">&times;</span>
+                    </div>
+                    <form id="registrationForm" method="post">
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <input type="text" class="form-control" id="username" placeholder="Enter Username" required>
+                            <div id="usernameError" class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" class="form-control" id="email" placeholder="Enter Email" required>
+                            <div id="emailError" class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" class="form-control" id="password" placeholder="Enter Password" required>
+                            <div id="passwordError" class="error-message"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmpassword">Confirm Password</label>
+                            <input type="password" class="form-control" id="confirmpassword" placeholder="Confirm Password" required>
+                            <div id="confirmpasswordError" class="error-message"></div>
+                        </div>
+                        {% csrf_token %}
+
+                        <!-- Button group for Register and Login buttons -->
+                        <div class="btn-group-custom mt-3">
+                            <button type="submit" class="btn btn-primary w-50">Register</button>
+                            <a href="{% url 'login' %}" class="btn btn-secondary w-50 ms-2">Login</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Hide alert after 3 seconds
+        function showAlert(message, isSuccess) {
+            const alertBox = document.getElementById('alertPlaceholder');
+            const alertMessage = document.getElementById('alertMessage');
+            alertMessage.innerText = message;
+
+            alertBox.classList.remove('alert-danger', 'alert-success');
+            alertBox.classList.add(isSuccess ? 'alert-success' : 'alert-danger');
+            alertBox.classList.add('show-alert');
+
+            setTimeout(() => {
+                alertBox.classList.remove('show-alert');
+            }, 3000);
+        }
+
+        function closeAlert() {
+            const alertBox = document.getElementById('alertPlaceholder');
+            alertBox.classList.remove('show-alert');
+        }
+
+        function clearErrors() {
+            document.getElementById('usernameError').innerText = '';
+            document.getElementById('emailError').innerText = '';
+            document.getElementById('passwordError').innerText = '';
+            document.getElementById('confirmpasswordError').innerText = '';
+        }
+
+        document.getElementById('registrationForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            clearErrors();
+
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmpassword = document.getElementById('confirmpassword').value;
+            const data = {
+                username: username,
+                email: email,
+                password: password,
+                confirmpassword: confirmpassword
+            };
+
+            fetch('/usersapi/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.msg) {
+                    // Show success message
+                    showAlert(data.msg, true);
+                } else {
+                    // Show field errors
+                    if (data.username) {
+                        document.getElementById('usernameError').innerText = data.username.join(' | ');
+                    }
+                    if (data.email) {
+                        document.getElementById('emailError').innerText = data.email.join(' | ');
+                    }
+                    if (data.password) {
+                        document.getElementById('passwordError').innerText = data.password.join(' | ');
+                    }
+                    if (data.confirmpassword) {
+                        document.getElementById('confirmpasswordError').innerText = data.confirmpassword.join(' | ');
+                    }
+                    if (data.non_field_errors) {
+                        showAlert(data.non_field_errors.join(' | '), false);
+                    }
+                }
+            })
+            .catch(error => {
+                showAlert('An error occurred, please try again later.', false);
+            });
+        });
+    </script>
+
+</body>
+</html>

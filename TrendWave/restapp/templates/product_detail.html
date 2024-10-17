@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block styles %}
+<style>
+    .carousel-inner img {
+        width: 100%;
+        height: auto;
+    }
+    .product-details {
+        margin-top: 20px;
+    }
+    .btn-container {
+        margin-top: 20px;
+    }
+    .btn-container .btn {
+        margin-right: 10px; /* Adjust spacing between buttons */
+    }
+</style>
+{% endblock %}
+{% block body %}
+<!-- {% csrf_token %} -->
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-md-6">
+                <!-- Carousel -->
+                <div id="productCarousel" class="carousel slide" data-ride="carousel">
+                    <ol class="carousel-indicators">
+                        {% for image in product.images %}
+                            <li data-target="#productCarousel" data-slide-to="{{ forloop.counter0 }}" {% if forloop.first %}class="active"{% endif %}></li>
+                        {% endfor %}
+                    </ol>
+                    <div class="carousel-inner">
+                        {% for image in product.images %}
+                            <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                                <img src="{{ image }}" class="d-block w-100" alt="{{ product.title }}">
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <a class="carousel-control-prev" href="#productCarousel" role="button" data-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="sr-only">Previous</span>
+                    </a>
+                    <a class="carousel-control-next" href="#productCarousel" role="button" data-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="sr-only">Next</span>
+                    </a>
+                </div>
+            </div>
+            <div class="col-md-6 product-details">
+                <h1>{{ product.title }}</h1>
+                <p><strong>Price:</strong> ₹{{ product.price }}</p>
+                <p><strong>Description:</strong> {{ product.description }}</p>
+                <div class="btn-container">
+                    <a href="/" class="btn btn-secondary">Back to Products</a>
+                    <a href="{% url 'buy' product.id %}" id="buyNowButton" class="btn btn-success">Buy Now</a>
+                    <a href="#" id="addToCartButton" class="btn btn-primary">Add to Cart</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS, Popper.js, and jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const addToCartButton = document.getElementById('addToCartButton');
+            const productTitle = "{{ product.title }}";
+
+            addToCartButton.addEventListener('click', function(event) {
+                event.preventDefault();
+
+                const email = localStorage.getItem('email');
+                if (!email) {
+                    alert('Email is not found in localStorage.');
+                    return;
+                }
+
+                fetch('http://127.0.0.1:8000/usersapi/', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        cart: productTitle
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.msg) {
+                        alert(data.msg);
+                    } else {
+                        console.error('Unexpected response:', data);
+                        alert('An unexpected error occurred.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while adding the product to the cart.');
+                });
+            });
+        });
+    </script>
+{% endblock %}
